@@ -7,113 +7,111 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: var(--tg-theme-font-family, sans-serif);
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
-        .card {
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border-radius: 12px;
+            font-family: sans-serif;
             padding: 16px;
-            width: 100%;
-            max-width: 300px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000000);
         }
-        button {
-            background-color: var(--tg-theme-button-color, #3390ec);
+        .node-card {
+            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .action-btn {
+            background-color: var(--tg-theme-button-color, #007bff);
             color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 8px 16px;
+            border-radius: 4px;
             cursor: pointer;
-            width: 100%;
             margin-top: 10px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="tree-container"></div>
 
     <script>
-        /**
-         * <p>Утилита для безопасной проверки объектов на null и undefined.</p>
-         * <p>Реализует паттерн защитного программирования для предотвращения ошибок TypeError в среде выполнения без строгой типизации.</p>
-         *
-         * @param value {@code Object} проверяемое значение
-         * @return {@code boolean} истина, если значение отсутствует
-         */
-        function isNullOrUndefined(value) {
-            if (value === null || value === undefined) {
-                return true;
+        const Objects = {
+            /**
+             * <p>Проверяет переданную ссылку на отсутствие инициализации.</p>
+             *
+             * @param obj {@code Object} инспектируемая ссылка
+             * @return {@code boolean} результат проверки на null или undefined
+             */
+            isNull: function(obj) {
+                if (obj === null) {
+                    return true;
+                }
+                if (obj === undefined) {
+                    return true;
+                }
+                return false;
             }
-            return false;
-        }
+        };
 
         /**
-         * <p>Генерирует и монтирует DOM-узлы для карточки персоны.</p>
-         * <p>Прямая манипуляция DOM выбрана для отказа от тяжелых фреймворков и минимизации времени загрузки (TTI) в условиях мобильного интернета.</p>
+         * <p>Формирует структуру DOM для отображения данных узла графа.</p>
+         * <ul>
+         *   <li>Инициализирует контейнер карточки.</li>
+         *   <li>Связывает обработчик событий с нативным API мессенджера Telegram.</li>
+         * </ul>
          *
-         * @param containerId {@code String} идентификатор корневого узла
-         * @param personData {@code Object} модель данных персоны
+         * @param containerId {@code String} идентификатор целевого узла в DOM
+         * @param personData {@code Object} объект с данными персоны
          * @return {@code void}
          */
-        function renderPersonCard(containerId, personData) {
+        function renderNode(containerId, personData) {
             const container = document.getElementById(containerId);
             
-            if (isNullOrUndefined(container)) {
-                console.error("Критическая ошибка: Корневой контейнер не найден в DOM");
+            if (Objects.isNull(container)) {
                 return;
             }
 
             const card = document.createElement("div");
-            card.className = "card";
+            card.className = "node-card";
             
-            const nameNode = document.createElement("h3");
-            nameNode.textContent = personData.fullName;
+            const title = document.createElement("h3");
+            title.textContent = personData.fullName;
             
-            const yearNode = document.createElement("p");
-            if (isNullOrUndefined(personData.birthYear)) {
-                yearNode.textContent = "Год рождения: неизвестно";
+            const birthInfo = document.createElement("p");
+            if (Objects.isNull(personData.birthYear)) {
+                birthInfo.textContent = "Год рождения: неизвестен";
             } else {
-                yearNode.textContent = "Год рождения: " + personData.birthYear;
+                birthInfo.textContent = "Год рождения: " + personData.birthYear;
             }
 
-            const actionButton = document.createElement("button");
-            actionButton.textContent = "Показать предков";
+            const button = document.createElement("button");
+            button.className = "action-btn";
+            button.textContent = "Загрузить предков";
             
-            actionButton.onclick = function() {
-                if (!isNullOrUndefined(window.Telegram.WebApp)) {
-                    // Использование нативного UI мессенджера для обратной связи
-                    window.Telegram.WebApp.showAlert("Запрос ветки для ID: " + personData.id);
-                    // Здесь в будущем будет отправка данных на бэкенд: window.Telegram.WebApp.sendData(personData.id)
+            button.onclick = function() {
+                if (!Objects.isNull(window.Telegram) && !Objects.isNull(window.Telegram.WebApp)) {
+                    window.Telegram.WebApp.showAlert("Загрузка ветви для ID: " + personData.id);
                 }
             };
 
-            card.appendChild(nameNode);
-            card.appendChild(yearNode);
-            card.appendChild(actionButton);
+            card.appendChild(title);
+            card.appendChild(birthInfo);
+            card.appendChild(button);
             
             container.appendChild(card);
         }
 
-        // Инициализация среды мессенджера
-        const tg = window.Telegram.WebApp;
-        tg.ready(); // Сообщает мессенджеру, что приложение готово к отображению
-        tg.expand(); // Разворачивает окно на всю высоту экрана
+        if (!Objects.isNull(window.Telegram) && !Objects.isNull(window.Telegram.WebApp)) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
 
-        // Моковые данные для демонстрации
-        const activePerson = {
-            id: "node-123",
-            fullName: "Алексей Смирнов",
+        const mockData = {
+            id: "pers-001",
+            fullName: "Смирнов Алексей",
             birthYear: 1965
         };
 
-        renderPersonCard("app", activePerson);
+        renderNode("tree-container", mockData);
     </script>
 </body>
 </html>
